@@ -1,8 +1,12 @@
 import express from "express";
-import { login, logout, signup, updateProfile, checkAuth } from "../controllers/auth.contorller.js";
+import { login, logout, signup, updateProfile, checkAuth, sendOtp, verifyOtp } from "../controllers/auth.contorller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
+
+router.post("/send-otp", sendOtp);
+
+router.post("/verify-otp", verifyOtp);
 
 router.post("/signup", signup);
 

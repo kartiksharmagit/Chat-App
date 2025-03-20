@@ -2,19 +2,27 @@ import cloudinary from "../lib/cloudinary.js";
 import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
+
+const OTP_STORE = {};
 
 export const signup = async (req,res) =>{
     try {
-        const { fullName, email, password } = req.body;
-        if (!fullName || !email || !password){
+        const { fullName, email, username, password } = req.body;
+        if (!fullName || !email || !password || !username){
             return res.status(400).json({message : "All Fields are Required"});
         }
         if(password.length<8){
             return res.status(400).json({message : "Password must have at least 8 characters"});
         }
-        const user = await User.findOne({email});
-        if (user){
+        const existinguser = await User.findOne({email});
+        if (existinguser){
             return res.status(400).json({message : "Email already exists"});
+        }
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.status(400).json({ message: "Username is taken, choose another" });
         }
 
         //for bcryption or hashing of data
@@ -25,6 +33,7 @@ export const signup = async (req,res) =>{
         const newUser = new User({
             fullName,
             email,
+            username,
             password : hashedPassword,
         })
         if (newUser){
@@ -35,6 +44,7 @@ export const signup = async (req,res) =>{
             res.status(201).json({
                 _id : newUser._id,
                 fullName : newUser.fullName,
+                username : newUser.username,
                 email : newUser.email,
                 profilePic : newUser.profilePic,
             });
@@ -46,6 +56,57 @@ export const signup = async (req,res) =>{
             console.log("Error in signUp controller" + error);
             res.status(500).json({message : "Internal Server Error"});
     }
+};
+
+// 📌 Send OTP to user's email
+export const sendOtp = async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        return res.status(400).json({ message: "Email already exists. Please log in instead." });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString(); // Generate 6-digit OTP
+    OTP_STORE[email] = { otp, expiresAt: Date.now() + 5 * 60 * 1000 }; // Expires in 5 minutes
+
+    // Send OTP via email
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: process.env.EMAIL,
+            pass: process.env.EMAIL_PASSWORD,
+        },
+    });
+
+    try {
+        await transporter.sendMail({
+            from: process.env.EMAIL,
+            replyTo: process.env.EMAIL,
+            to: email,
+            subject: "Your OTP Code",
+            text: `-${otp} is Your OTP Code. It will expire in 5 minutes.`,
+            html: `<p>Your OTP code is ${otp}. It will expire in 5 minutes.</p>`,
+        });
+
+        res.status(200).json({ message: "OTP sent successfully!" });
+    } catch (error) {
+        res.status(500).json({ message: "Error sending OTP", error });
+        console.log(error);
+    }
+};
+
+export const verifyOtp = async (req, res) => {
+    const { email, otp } = req.body;
+    const storedOTP = OTP_STORE[email];
+
+    if (!storedOTP || storedOTP.otp !== otp || storedOTP.expiresAt < Date.now()) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    delete OTP_STORE[email]; // Remove OTP after successful verification
+    res.status(200).json({ message: "OTP verified! Proceed to complete signup", email });
 };
 
 export const login = async (req,res) =>{
@@ -109,7 +170,7 @@ export const updateProfile = async (req,res) => {
         console.log("Error in updateProfile", error);
         return res.status(500).json({message : "Internal Server Error"});
     }
-}
+};
 
 export const checkAuth = (req,res) =>{
     try {
@@ -119,3 +180,4 @@ export const checkAuth = (req,res) =>{
         res.status(500).json({message : "Internal Server Error"});
     }
 };
+
