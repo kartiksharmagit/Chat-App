@@ -1,5 +1,5 @@
 import { useAuthStore } from "../store/useAuthStore.js";
-import { LogOut, MessageSquare, Settings, MessageCircle } from "lucide-react";
+import { Search, MessageSquare, Settings, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const NavBar = () => {
@@ -24,9 +24,11 @@ const NavBar = () => {
           <div className="flex items-center gap-2">
             {authUser && (
               <>
+                <Link to={"/search"} className={`btn btn-sm gap-2 transition-colors bg-transparent border-none shadow-none outline-none focus:ring-0`}>
+                <Search className="size-6 hover:opacity-80 transition-all" />
+                </Link>
                 <Link to={"/settings"} className={`btn btn-sm gap-2 transition-colors bg-transparent border-none shadow-none outline-none focus:ring-0`}>
                 <Settings className="size-6 hover:opacity-80 transition-all" />
-                {/* <span className="hidden sm:inline">Settings</span> */}
                 </Link>
                 <Link to={"/profile"} className={`btn btn-sm gap-2 bg-transparent border-none shadow-none outline-none focus:ring-0`}>
                   {/* <User className="size-5" /> */}

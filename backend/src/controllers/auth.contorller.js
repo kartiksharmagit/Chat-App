@@ -58,7 +58,7 @@ export const signup = async (req,res) =>{
     }
 };
 
-// 📌 Send OTP to user's email
+// Send OTP to user's email
 export const sendOtp = async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: "Email is required" });
@@ -181,3 +181,21 @@ export const checkAuth = (req,res) =>{
     }
 };
 
+export const search = async (req,res) => {
+    const { query } = req.query;
+    if (!query) return res.json([]);
+
+    try {
+        const users = await User.find({
+            $or: [
+                { fullName: { $regex: query, $options: "i" } }, // Case-insensitive match
+                { username: { $regex: query, $options: "i" } },
+            ],
+        }).select("_id fullName username profilePic");
+
+        res.json(users);
+    } catch (error) {
+        console.error("Search error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};

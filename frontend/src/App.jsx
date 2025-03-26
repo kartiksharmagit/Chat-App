@@ -4,6 +4,7 @@ import SignUp from "./pages/SignUpPage";
 import Login from "./pages/LoginPage";
 import Profile from "./pages/ProfilePage";
 import Settings from "./pages/SettingsPage";
+import Search from "./pages/SearchPage.jsx";
 import {Routes,Route, Navigate} from "react-router-dom"
 import { useAuthStore } from "./store/useAuthStore.js";
 import { useThemeStore } from "./store/useThemeStore.js";
@@ -36,6 +37,7 @@ const App = () => {
       <Route path="/login" element={!authUser ? <Login/> : <Navigate to="/"/>}/>
       <Route path="/settings" element={authUser ? <Settings/> : <Navigate to="/login"/>}/>
       <Route path="/profile" element={authUser ? <Profile/> : <Navigate to="/login"/>}/>
+      <Route path="/search" element={authUser ? <Search/> : <Navigate to="/login"/>}/>
     </Routes>
     <Toaster/>
     </div>

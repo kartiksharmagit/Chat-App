@@ -9,6 +9,7 @@ export const useAuthStore = create((set,get)=>({
     isUpdatingProfile : false,
     isCheckingAuth : true,
     isResendingOtp: false,
+    isSearching : false,
     onlineUsers : [],
 
     step : 1,
@@ -21,6 +22,11 @@ export const useAuthStore = create((set,get)=>({
       password: "",
       profilePic: "",
     },
+
+    searchTerm: "",
+    searchResults: [],
+    setSearchTerm: (query) => set({ searchTerm: query }),
+    clearSearch: () => set({ searchTerm: "", searchResults: [] }),
 
     //these are here to rightfully take the input event from the frontend
     setEmail: (email) => set({ email }),
@@ -42,7 +48,7 @@ export const useAuthStore = create((set,get)=>({
         }, 1000);
     },
 
-    // 📌 Step 1: Send OTP to Email
+    // Step 1: Send OTP to Email
     sendOtp: async () => {
         const { email, startTimer } = get();
         if (!email.trim()) return toast.error("Email is required");
@@ -61,7 +67,7 @@ export const useAuthStore = create((set,get)=>({
         }
     },
 
-    // 📌 Step 2: Verify OTP
+    // Step 2: Verify OTP
     verifyOtp: async () => {
         const { email, otp } = get();
         if (!otp.trim()) return toast.error("OTP is required");
@@ -80,7 +86,7 @@ export const useAuthStore = create((set,get)=>({
         }
     },
 
-    // 📌 Resend OTP
+    // Resend OTP
     resendOtp: async () => {
         const { email, timeLeft, startTimer } = get();
         if (timeLeft > 0) return;
@@ -98,7 +104,7 @@ export const useAuthStore = create((set,get)=>({
         }
     },
 
-    // 📌 Step 3: Complete Signup
+    // Step 3: Complete Signup
     signUp: async () => {
         const { email, formData } = get();
         if (!formData.fullName.trim()) return toast.error("Full Name is required");
@@ -129,19 +135,25 @@ export const useAuthStore = create((set,get)=>({
         }
     },
     
-    // signUp: async (data) => {
-    //     set({ isSigningUp: true });
-    //     try {
-    //       const res = await axiosInstance.post("/auth/signup", data);
-    //       set({ authUser: res.data });
-    //       toast.success("Account created successfully");
-    //       // get().connectSocket();
-    //     } catch (error) {
-    //       toast.error(error.response.data.message);
-    //     } finally {
-    //       set({ isSigningUp: false });
-    //     }
-    // },
+    fetchSearchResults: async () => {
+        const { searchTerm,authUser } = get();
+        if (!searchTerm.trim()) {
+            set({ searchResults: [] });
+            return;
+        }
+    
+        set({ isSearching: true });
+        try {
+            const res = await axiosInstance.get(`/auth/search?query=${encodeURIComponent(searchTerm)}`);
+            const filteredUsers = res.data.filter(user => user._id !== authUser._id);
+            set({ searchResults: filteredUsers});
+        } catch (error) {
+            console.error("Search error:", error);
+            toast.error("Error fetching users");
+        } finally {
+            set({ isSearching: false });
+        }
+    },
 
     login : async (data) => {
       set({isLoggingIn : true});
